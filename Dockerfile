@@ -4,6 +4,9 @@ WORKDIR /app
 
 COPY . .
 
+# 👇 CHANGE THIS LINE (IMPORTANT)
+WORKDIR /app/backend
+
 RUN mvn clean package -DskipTests
 
 EXPOSE 8080
