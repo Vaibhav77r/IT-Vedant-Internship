@@ -1,11 +1,11 @@
 FROM maven:3.9.6-eclipse-temurin-17
 
-WORKDIR /app
+WORKDIR /ims-project
 
 COPY . .
 
-# 👇 VERY IMPORTANT LINE
-WORKDIR /backend
+# ✅ CORRECT PATH
+WORKDIR /ims-project/backend
 
 RUN mvn clean package -DskipTests
 
