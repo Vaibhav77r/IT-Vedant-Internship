@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY . .
 
-# 👇 CHANGE THIS LINE (IMPORTANT)
+# 👇 VERY IMPORTANT LINE
 WORKDIR /app/backend
 
 RUN mvn clean package -DskipTests
