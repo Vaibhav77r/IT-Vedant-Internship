@@ -1,16 +1,24 @@
-import axios from 'axios';
+import axios from "axios";
 
 const API = axios.create({
-  baseURL: 'http://localhost:8080/api',  // keep full URL since frontend is on different port
+  baseURL: import.meta.env.VITE_API_URL + "/api",
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-// Attach JWT token to every request automatically
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// Attach JWT token automatically
+API.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 export default API;
