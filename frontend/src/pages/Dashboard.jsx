@@ -16,10 +16,11 @@ export default function Dashboard() {
       <aside style={styles.sidebar}>
         <div style={styles.logo}>IMS</div>
         <nav>
-          <div style={styles.navItem}>📊 Dashboard</div>
+          <div style={styles.navItem} onClick={() => navigate('/dashboard')}>📊 Dashboard</div>
+          <div style={styles.navItem} onClick={() => navigate('/groups')}>👥 Manage Groups</div>
           {user?.role === 'ADMIN' && (
             <>
-              <div style={styles.navItem}>👥 Users</div>
+              <div style={styles.navItem}>👤 Users</div>
               <div style={styles.navItem}>🏢 Clients</div>
             </>
           )}
@@ -39,10 +40,10 @@ export default function Dashboard() {
         {/* Stats Cards */}
         <div style={styles.grid}>
           {[
-            { label: 'Total Clients', value: '0', icon: '🏢', color: '#ede9fe' },
-            { label: 'Estimates', value: '0', icon: '📄', color: '#dbeafe' },
-            { label: 'Invoices', value: '0', icon: '🧾', color: '#dcfce7' },
-            { label: 'Payments', value: '₹0', icon: '💳', color: '#fef9c3' },
+            { label: 'Total Groups',  value: '0', icon: '👥', color: '#ede9fe' },
+            { label: 'Total Clients', value: '0', icon: '🏢', color: '#dbeafe' },
+            { label: 'Invoices',      value: '0', icon: '🧾', color: '#dcfce7' },
+            { label: 'Payments',      value: '₹0', icon: '💳', color: '#fef9c3' },
           ].map((card) => (
             <div key={card.label} style={{ ...styles.card, background: card.color }}>
               <span style={styles.cardIcon}>{card.icon}</span>
@@ -55,9 +56,10 @@ export default function Dashboard() {
         </div>
 
         <div style={styles.infoBox}>
-          <p>✅ Module 1 complete — Login & Registration is working!</p>
+          <p>✅ Module 1 — Login & Registration complete</p>
+          <p>✅ Module 2 — Group Management added</p>
           <p style={{ fontSize: '0.85rem', color: '#666', marginTop: '4px' }}>
-            More modules (Clients, Estimates, Invoices) will be added here.
+            Click "Manage Groups" in the sidebar to manage groups.
           </p>
         </div>
       </main>
