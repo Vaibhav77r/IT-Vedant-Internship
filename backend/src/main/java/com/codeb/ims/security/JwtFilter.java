@@ -26,18 +26,32 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
+        System.out.println("=== JWT FILTER ===");
+        System.out.println("URL: " + request.getRequestURI());
+        System.out.println("Auth Header: " + authHeader);
+
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
-            if (jwtUtil.isTokenValid(token)) {
-                String email = jwtUtil.extractEmail(token);
-                String role  = jwtUtil.extractRole(token);
+            try {
+                if (jwtUtil.isTokenValid(token)) {
+                    String email = jwtUtil.extractEmail(token);
+                    String role  = jwtUtil.extractRole(token);
 
-                var auth = new UsernamePasswordAuthenticationToken(
-                        email, null,
-                        List.of(new SimpleGrantedAuthority("ROLE_" + role))
-                );
-                SecurityContextHolder.getContext().setAuthentication(auth);
+                    System.out.println("Token valid for: " + email + " role: " + role);
+
+                    var auth = new UsernamePasswordAuthenticationToken(
+                            email, null,
+                            List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                } else {
+                    System.out.println("Token invalid!");
+                }
+            } catch (Exception e) {
+                System.out.println("Token error: " + e.getMessage());
             }
+        } else {
+            System.out.println("No Bearer token found in request!");
         }
 
         chain.doFilter(request, response);
