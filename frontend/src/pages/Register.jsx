@@ -132,7 +132,6 @@ export default function Register() {
   );
 }
 
-// 🎨 Simple styling
 const styles = {
   page: {
     minHeight: '100vh',
