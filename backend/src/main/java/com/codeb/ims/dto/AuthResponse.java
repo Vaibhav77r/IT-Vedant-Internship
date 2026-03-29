@@ -3,8 +3,9 @@ package com.codeb.ims.dto;
 import lombok.*;
 
 @Data
-@AllArgsConstructor
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AuthResponse {
     private String token;
     private String role;
