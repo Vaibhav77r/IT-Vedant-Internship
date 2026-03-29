@@ -26,10 +26,10 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
-    // GET /api/auth/me  (protected — needs valid JWT)
+    // GET /api/auth/me
     @GetMapping("/me")
     public ResponseEntity<String> me(jakarta.servlet.http.HttpServletRequest req) {
         String email = (String) req.getAttribute("email");
-        return ResponseEntity.ok("Authenticated as: " + req.getUserPrincipal().getName());
+        return ResponseEntity.ok("Logged in user: " + email);
     }
 }
