@@ -7,19 +7,23 @@ import com.codeb.ims.entity.Chain;
 import com.codeb.ims.repository.BrandRepository;
 import com.codeb.ims.repository.ChainRepository;
 import com.codeb.ims.repository.ZoneRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class BrandService {
 
     private final BrandRepository brandRepository;
     private final ChainRepository chainRepository;
     private final ZoneRepository zoneRepository;
+
+    public BrandService(BrandRepository brandRepository, ChainRepository chainRepository, ZoneRepository zoneRepository) {
+        this.brandRepository = brandRepository;
+        this.chainRepository = chainRepository;
+        this.zoneRepository = zoneRepository;
+    }
 
     public List<BrandResponse> getAllBrands() {
         return brandRepository.findAllByIsActiveTrue()
@@ -46,37 +50,30 @@ public class BrandService {
         Chain chain = chainRepository.findByChainIdAndIsActiveTrue(req.getChainId())
                 .orElseThrow(() -> new RuntimeException("Company not found"));
 
-        Brand brand = Brand.builder()
-                .brandName(req.getBrandName().trim())
-                .chain(chain)
-                .isActive(true)
-                .build();
-
+        Brand brand = new Brand();
+        brand.setBrandName(req.getBrandName().trim());
+        brand.setChain(chain);
+        brand.setIsActive(true);
         return toResponse(brandRepository.save(brand));
     }
 
     public BrandResponse updateBrand(Long id, BrandRequest req) {
         Brand brand = brandRepository.findByBrandIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new RuntimeException("Brand not found"));
-
         Chain chain = chainRepository.findByChainIdAndIsActiveTrue(req.getChainId())
                 .orElseThrow(() -> new RuntimeException("Company not found"));
 
         brand.setBrandName(req.getBrandName().trim());
         brand.setChain(chain);
-
         return toResponse(brandRepository.save(brand));
     }
 
-    // Soft delete — check zones first
     public String deleteBrand(Long id) {
         Brand brand = brandRepository.findByBrandIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new RuntimeException("Brand not found"));
-
         if (zoneRepository.existsByBrand_BrandIdAndIsActiveTrue(id)) {
             throw new RuntimeException("Cannot delete: This brand has active zones linked to it");
         }
-
         brand.setIsActive(false);
         brandRepository.save(brand);
         return "Brand deactivated successfully";

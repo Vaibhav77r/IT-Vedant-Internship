@@ -1,35 +1,36 @@
 package com.codeb.ims.controller;
 
-import com.codeb.ims.dto.*;
+import com.codeb.ims.dto.AuthResponse;
+import com.codeb.ims.dto.LoginRequest;
+import com.codeb.ims.dto.RegisterRequest;
 import com.codeb.ims.service.AuthService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.*;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
-@RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
 
-    // POST /api/auth/register
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
+
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }
 
-    // POST /api/auth/login
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 
-    // GET /api/auth/me
     @GetMapping("/me")
-    public ResponseEntity<String> me(jakarta.servlet.http.HttpServletRequest req) {
-        String email = (String) req.getAttribute("email");
-        return ResponseEntity.ok("Logged in user: " + email);
+    public ResponseEntity<String> me(HttpServletRequest req) {
+        return ResponseEntity.ok("Authenticated as: " + req.getUserPrincipal().getName());
     }
 }

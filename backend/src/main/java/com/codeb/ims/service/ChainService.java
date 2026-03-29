@@ -7,19 +7,23 @@ import com.codeb.ims.entity.Group;
 import com.codeb.ims.repository.BrandRepository;
 import com.codeb.ims.repository.ChainRepository;
 import com.codeb.ims.repository.GroupRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class ChainService {
 
     private final ChainRepository chainRepository;
     private final GroupRepository groupRepository;
     private final BrandRepository brandRepository;
+
+    public ChainService(ChainRepository chainRepository, GroupRepository groupRepository, BrandRepository brandRepository) {
+        this.chainRepository = chainRepository;
+        this.groupRepository = groupRepository;
+        this.brandRepository = brandRepository;
+    }
 
     public List<ChainResponse> getAllChains() {
         return chainRepository.findAllByIsActiveTrue()
@@ -44,42 +48,35 @@ public class ChainService {
         Group group = groupRepository.findByGroupIdAndIsActiveTrue(req.getGroupId())
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
-        Chain chain = Chain.builder()
-                .companyName(req.getCompanyName().trim())
-                .gstnNo(req.getGstnNo().trim().toUpperCase())
-                .group(group)
-                .isActive(true)
-                .build();
-
+        Chain chain = new Chain();
+        chain.setCompanyName(req.getCompanyName().trim());
+        chain.setGstnNo(req.getGstnNo().trim().toUpperCase());
+        chain.setGroup(group);
+        chain.setIsActive(true);
         return toResponse(chainRepository.save(chain));
     }
 
     public ChainResponse updateChain(Long id, ChainRequest req) {
         Chain chain = chainRepository.findByChainIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new RuntimeException("Chain not found"));
-
         if (chainRepository.existsByGstnNoAndChainIdNot(req.getGstnNo().trim(), id)) {
             throw new RuntimeException("GSTN number already exists");
         }
-
         Group group = groupRepository.findByGroupIdAndIsActiveTrue(req.getGroupId())
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
         chain.setCompanyName(req.getCompanyName().trim());
         chain.setGstnNo(req.getGstnNo().trim().toUpperCase());
         chain.setGroup(group);
-
         return toResponse(chainRepository.save(chain));
     }
 
     public String deleteChain(Long id) {
         Chain chain = chainRepository.findByChainIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new RuntimeException("Chain not found"));
-
         if (brandRepository.existsByChain_ChainIdAndIsActiveTrue(id)) {
             throw new RuntimeException("Cannot delete: This company has active brands linked to it");
         }
-
         chain.setIsActive(false);
         chainRepository.save(chain);
         return "Chain deactivated successfully";

@@ -1,22 +1,17 @@
 package com.codeb.ims.dto;
 
-import jakarta.validation.constraints.*;
-import lombok.Data;
-
-@Data
 public class RegisterRequest {
-
-    @NotBlank(message = "Full name is required")
     private String fullName;
-
-    @Email(message = "Enter a valid email")
-    @NotBlank(message = "Email is required")
     private String email;
-
-    @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
+    private String role;
 
-    @NotBlank(message = "Role is required")
-    private String role; // ADMIN or SALESPERSON
+    public String getFullName() { return fullName; }
+    public void setFullName(String v) { this.fullName = v; }
+    public String getEmail() { return email; }
+    public void setEmail(String v) { this.email = v; }
+    public String getPassword() { return password; }
+    public void setPassword(String v) { this.password = v; }
+    public String getRole() { return role; }
+    public void setRole(String v) { this.role = v; }
 }
