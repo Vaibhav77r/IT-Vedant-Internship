@@ -7,6 +7,7 @@ import ManageGroups from './pages/ManageGroups';
 import ManageChains from './pages/ManageChains';
 import ManageBrands from './pages/ManageBrands';
 import ManageZones from './pages/ManageZones';
+import ManageEstimates from './pages/Manageestimates';
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
@@ -24,6 +25,7 @@ function AppRoutes() {
       <Route path="/chains" element={<PrivateRoute><ManageChains /></PrivateRoute>} />
       <Route path="/brands" element={<PrivateRoute><ManageBrands /></PrivateRoute>} />
       <Route path="/zones" element={<PrivateRoute><ManageZones /></PrivateRoute>} />
+      <Route path="/estimates" element={<PrivateRoute><ManageEstimates /></PrivateRoute>} />
     </Routes>
   );
 }

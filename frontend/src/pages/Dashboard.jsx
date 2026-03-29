@@ -16,12 +16,11 @@ export default function Dashboard() {
           <div style={styles.navItem} onClick={() => navigate('/chains')}>🔗 Manage Chain</div>
           <div style={styles.navItem} onClick={() => navigate('/brands')}>🏷️ Manage Brands</div>
           <div style={styles.navItem} onClick={() => navigate('/zones')}>🗺️ Manage SubZones</div>
-          <div style={styles.navItem}>📄 Manage Estimate</div>
+          <div style={styles.navItem} onClick={() => navigate('/estimates')}>📄 Manage Estimate</div>
           <div style={styles.navItem}>🧾 Manage Invoices</div>
         </nav>
         <button style={styles.logoutBtn} onClick={handleLogout}>Logout</button>
       </aside>
-
       <main style={styles.main}>
         <div style={styles.header}>
           <h1 style={styles.heading}>Welcome, {user?.fullName} 👋</h1>
@@ -29,17 +28,17 @@ export default function Dashboard() {
         </div>
         <div style={styles.grid}>
           {[
-            { label:'Total Groups',  value:'0', icon:'👥', color:'#ede9fe', path:'/groups' },
-            { label:'Total Chains',  value:'0', icon:'🔗', color:'#dbeafe', path:'/chains' },
-            { label:'Total Brands',  value:'0', icon:'🏷️', color:'#dcfce7', path:'/brands' },
-            { label:'Total Zones',   value:'0', icon:'🗺️', color:'#fef9c3', path:'/zones'  },
+            { label:'Total Groups',    icon:'👥', color:'#ede9fe', path:'/groups' },
+            { label:'Total Chains',    icon:'🔗', color:'#dbeafe', path:'/chains' },
+            { label:'Total Brands',    icon:'🏷️', color:'#dcfce7', path:'/brands' },
+            { label:'Total Zones',     icon:'🗺️', color:'#fef9c3', path:'/zones'  },
+            { label:'Total Estimates', icon:'📄', color:'#fce7f3', path:'/estimates' },
           ].map((card) => (
             <div key={card.label}
               style={{ ...styles.card, background: card.color, cursor:'pointer' }}
               onClick={() => navigate(card.path)}>
               <span style={styles.cardIcon}>{card.icon}</span>
               <div>
-                <p style={styles.cardValue}>{card.value}</p>
                 <p style={styles.cardLabel}>{card.label}</p>
               </div>
             </div>
@@ -51,6 +50,7 @@ export default function Dashboard() {
           <p>✅ Module 3 — Chain Management</p>
           <p>✅ Module 4 — Brand Management</p>
           <p>✅ Module 5 — Zone/SubZone Management</p>
+          <p>✅ Module 6 — Estimate Management</p>
         </div>
       </main>
     </div>
@@ -67,10 +67,9 @@ const styles = {
   header:    { display:'flex', alignItems:'center', gap:'1rem', marginBottom:'2rem' },
   heading:   { fontSize:'1.5rem', margin:0, color:'#1a1a2e' },
   badge:     { background:'#4f46e5', color:'#fff', padding:'4px 12px', borderRadius:'20px', fontSize:'0.75rem', fontWeight:'600' },
-  grid:      { display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:'1rem', marginBottom:'2rem' },
+  grid:      { display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:'1rem', marginBottom:'2rem' },
   card:      { padding:'1.2rem', borderRadius:'12px', display:'flex', alignItems:'center', gap:'1rem' },
   cardIcon:  { fontSize:'2rem' },
-  cardValue: { fontSize:'1.5rem', fontWeight:'700', margin:0, color:'#1a1a2e' },
-  cardLabel: { fontSize:'0.8rem', color:'#555', margin:0 },
+  cardLabel: { fontSize:'0.85rem', color:'#555', margin:0, fontWeight:'600' },
   infoBox:   { background:'#fff', padding:'1.2rem', borderRadius:'12px', borderLeft:'4px solid #4f46e5', fontSize:'0.95rem', lineHeight:'2' }
 };
