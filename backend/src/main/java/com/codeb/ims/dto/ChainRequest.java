@@ -1,18 +1,14 @@
 package com.codeb.ims.dto;
 
-import jakarta.validation.constraints.*;
-import lombok.Data;
-
-@Data
 public class ChainRequest {
-
-    @NotBlank(message = "Company name is required")
     private String companyName;
-
-    @NotBlank(message = "GSTN number is required")
-    @Size(min = 15, max = 15, message = "GSTN must be exactly 15 characters")
     private String gstnNo;
-
-    @NotNull(message = "Group is required")
     private Long groupId;
+
+    public String getCompanyName() { return companyName; }
+    public void setCompanyName(String v) { this.companyName = v; }
+    public String getGstnNo() { return gstnNo; }
+    public void setGstnNo(String v) { this.gstnNo = v; }
+    public Long getGroupId() { return groupId; }
+    public void setGroupId(Long v) { this.groupId = v; }
 }

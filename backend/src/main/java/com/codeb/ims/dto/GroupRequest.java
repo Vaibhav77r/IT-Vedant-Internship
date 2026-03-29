@@ -1,11 +1,7 @@
 package com.codeb.ims.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import lombok.*;
-
-@Data
 public class GroupRequest {
-
-    @NotBlank(message = "Group name is required")
     private String groupName;
+    public String getGroupName() { return groupName; }
+    public void setGroupName(String groupName) { this.groupName = groupName; }
 }

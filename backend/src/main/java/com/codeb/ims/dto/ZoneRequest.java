@@ -1,14 +1,10 @@
 package com.codeb.ims.dto;
 
-import jakarta.validation.constraints.*;
-import lombok.Data;
-
-@Data
 public class ZoneRequest {
-
-    @NotBlank(message = "Zone name is required")
     private String zoneName;
-
-    @NotNull(message = "Brand is required")
     private Long brandId;
+    public String getZoneName() { return zoneName; }
+    public void setZoneName(String v) { this.zoneName = v; }
+    public Long getBrandId() { return brandId; }
+    public void setBrandId(Long v) { this.brandId = v; }
 }
