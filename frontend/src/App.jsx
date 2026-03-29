@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import ManageGroups from './pages/ManageGroups';
 import ManageChains from './pages/ManageChains';
+import ManageBrands from './pages/ManageBrands';
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
@@ -20,6 +21,7 @@ function AppRoutes() {
       <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
       <Route path="/groups" element={<PrivateRoute><ManageGroups /></PrivateRoute>} />
       <Route path="/chains" element={<PrivateRoute><ManageChains /></PrivateRoute>} />
+      <Route path="/brands" element={<PrivateRoute><ManageBrands /></PrivateRoute>} />
     </Routes>
   );
 }

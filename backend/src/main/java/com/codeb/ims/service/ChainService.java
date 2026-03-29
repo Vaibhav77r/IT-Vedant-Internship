@@ -4,6 +4,7 @@ import com.codeb.ims.dto.ChainRequest;
 import com.codeb.ims.dto.ChainResponse;
 import com.codeb.ims.entity.Chain;
 import com.codeb.ims.entity.Group;
+import com.codeb.ims.repository.BrandRepository;
 import com.codeb.ims.repository.ChainRepository;
 import com.codeb.ims.repository.GroupRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,32 +19,28 @@ public class ChainService {
 
     private final ChainRepository chainRepository;
     private final GroupRepository groupRepository;
+    private final BrandRepository brandRepository;
 
-    // Get all active chains
     public List<ChainResponse> getAllChains() {
         return chainRepository.findAllByIsActiveTrue()
                 .stream().map(this::toResponse).collect(Collectors.toList());
     }
 
-    // Get chains filtered by group
     public List<ChainResponse> getChainsByGroup(Long groupId) {
         return chainRepository.findAllByIsActiveTrueAndGroup_GroupId(groupId)
                 .stream().map(this::toResponse).collect(Collectors.toList());
     }
 
-    // Get single chain
     public ChainResponse getChainById(Long id) {
         Chain chain = chainRepository.findByChainIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new RuntimeException("Chain not found"));
         return toResponse(chain);
     }
 
-    // Add new chain
     public ChainResponse addChain(ChainRequest req) {
         if (chainRepository.existsByGstnNo(req.getGstnNo().trim())) {
             throw new RuntimeException("GSTN number already exists");
         }
-
         Group group = groupRepository.findByGroupIdAndIsActiveTrue(req.getGroupId())
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
@@ -57,7 +54,6 @@ public class ChainService {
         return toResponse(chainRepository.save(chain));
     }
 
-    // Update chain
     public ChainResponse updateChain(Long id, ChainRequest req) {
         Chain chain = chainRepository.findByChainIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new RuntimeException("Chain not found"));
@@ -76,24 +72,23 @@ public class ChainService {
         return toResponse(chainRepository.save(chain));
     }
 
-    // Soft delete — only if not linked to any brand
     public String deleteChain(Long id) {
         Chain chain = chainRepository.findByChainIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new RuntimeException("Chain not found"));
 
-        // TODO: Add brand relationship check in Module 4
-        // For now allow deletion if chain exists and is active
+        if (brandRepository.existsByChain_ChainIdAndIsActiveTrue(id)) {
+            throw new RuntimeException("Cannot delete: This company has active brands linked to it");
+        }
+
         chain.setIsActive(false);
         chainRepository.save(chain);
         return "Chain deactivated successfully";
     }
 
-    // Total active chains count
     public long getTotalChains() {
         return chainRepository.countByIsActiveTrue();
     }
 
-    // Helper
     private ChainResponse toResponse(Chain chain) {
         return ChainResponse.builder()
                 .chainId(chain.getChainId())
