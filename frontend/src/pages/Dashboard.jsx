@@ -15,7 +15,7 @@ export default function Dashboard() {
           <div style={styles.navItem} onClick={() => navigate('/groups')}>👥 Manage Groups</div>
           <div style={styles.navItem} onClick={() => navigate('/chains')}>🔗 Manage Chain</div>
           <div style={styles.navItem} onClick={() => navigate('/brands')}>🏷️ Manage Brands</div>
-          <div style={styles.navItem}>🗺️ Manage SubZones</div>
+          <div style={styles.navItem} onClick={() => navigate('/zones')}>🗺️ Manage SubZones</div>
           <div style={styles.navItem}>📄 Manage Estimate</div>
           <div style={styles.navItem}>🧾 Manage Invoices</div>
         </nav>
@@ -32,7 +32,7 @@ export default function Dashboard() {
             { label:'Total Groups',  value:'0', icon:'👥', color:'#ede9fe', path:'/groups' },
             { label:'Total Chains',  value:'0', icon:'🔗', color:'#dbeafe', path:'/chains' },
             { label:'Total Brands',  value:'0', icon:'🏷️', color:'#dcfce7', path:'/brands' },
-            { label:'Payments',      value:'₹0', icon:'💳', color:'#fef9c3', path:'/dashboard' },
+            { label:'Total Zones',   value:'0', icon:'🗺️', color:'#fef9c3', path:'/zones'  },
           ].map((card) => (
             <div key={card.label}
               style={{ ...styles.card, background: card.color, cursor:'pointer' }}
@@ -50,6 +50,7 @@ export default function Dashboard() {
           <p>✅ Module 2 — Group Management</p>
           <p>✅ Module 3 — Chain Management</p>
           <p>✅ Module 4 — Brand Management</p>
+          <p>✅ Module 5 — Zone/SubZone Management</p>
         </div>
       </main>
     </div>
