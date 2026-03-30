@@ -34,7 +34,6 @@ export default function ManageChains() {
 
       setChains(chainsRes.data || []);
       setGroups(groupsRes.data || []);
-
     } catch {
       setError("Failed to load data");
     }
@@ -79,24 +78,20 @@ export default function ManageChains() {
     setLoading(true);
 
     try {
-     const payload = {
-  companyName: form.companyName.trim(),
-  gstnNo: form.gstnNo.trim(),
-  groupId: Number(form.groupId)
-};
-
-console.log("Sending:", payload);
+      const payload = {
+        companyName: form.companyName.trim(),
+        gstnNo: form.gstnNo.trim(),
+        groupId: Number(form.groupId)
+      };
 
       await API.post("/api/chains", payload);
 
       setSuccess("Added successfully!");
       resetForm();
       fetchAll();
-
       setTimeout(() => setView("list"), 1000);
 
     } catch (err) {
-      console.log(err.response?.data);
       setError(err.response?.data?.message || "Add failed");
     } finally {
       setLoading(false);
@@ -118,21 +113,17 @@ console.log("Sending:", payload);
       const payload = {
         companyName: form.companyName.trim(),
         gstnNo: form.gstnNo.trim(),
-        groupId: Number(form.groupId) // 🔥 FIX
+        groupId: Number(form.groupId)
       };
-
-      console.log("Updating:", payload);
 
       await API.put(`/api/chains/${editChain.chainId}`, payload);
 
       setSuccess("Updated successfully!");
       resetForm();
       fetchAll();
-
       setTimeout(() => setView("list"), 1000);
 
     } catch (err) {
-      console.log(err.response?.data);
       setError(err.response?.data?.message || "Update failed");
     } finally {
       setLoading(false);
@@ -141,7 +132,7 @@ console.log("Sending:", payload);
 
   // ================= DELETE =================
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete?")) return;
+    if (!window.confirm("Delete this company?")) return;
 
     try {
       await API.delete(`/api/chains/${id}`);
@@ -157,7 +148,7 @@ console.log("Sending:", payload);
     setForm({
       companyName: chain.companyName || "",
       gstnNo: chain.gstnNo || "",
-      groupId: chain.groupId ? String(chain.groupId) : "" // 🔥 FIX
+      groupId: chain.groupId ? String(chain.groupId) : ""
     });
     setView("edit");
   };
@@ -171,10 +162,11 @@ console.log("Sending:", payload);
   return (
     <div style={ui.page}>
 
+      {/* HEADER */}
       <div style={ui.header}>
-        <h2>Manage Chains</h2>
+        <h2 style={ui.title}>Manage Chains</h2>
 
-        <div>
+        <div style={ui.controls}>
           <button style={ui.addBtn} onClick={() => {
             resetForm();
             setView("add");
@@ -182,7 +174,7 @@ console.log("Sending:", payload);
             + Add Company
           </button>
 
-          <select value={filterGroupId} onChange={handleFilterChange}>
+          <select style={ui.select} value={filterGroupId} onChange={handleFilterChange}>
             <option value="">All Groups</option>
             {groups.map(g => (
               <option key={g.groupId} value={g.groupId}>
@@ -193,6 +185,7 @@ console.log("Sending:", payload);
         </div>
       </div>
 
+      {/* LIST */}
       {view === "list" && (
         <div style={ui.card}>
           {error && <p style={ui.error}>{error}</p>}
@@ -200,12 +193,12 @@ console.log("Sending:", payload);
           <table style={ui.table}>
             <thead>
               <tr>
-                <th>#</th>
-                <th>Group</th>
-                <th>Company</th>
-                <th>GST</th>
-                <th>Edit</th>
-                <th>Delete</th>
+                <th style={ui.th}>#</th>
+                <th style={ui.th}>Group</th>
+                <th style={ui.th}>Company</th>
+                <th style={ui.th}>GST</th>
+                <th style={ui.th}>Edit</th>
+                <th style={ui.th}>Delete</th>
               </tr>
             </thead>
 
@@ -215,12 +208,18 @@ console.log("Sending:", payload);
               ) : (
                 chains.map((c, i) => (
                   <tr key={c.chainId}>
-                    <td>{i + 1}</td>
-                    <td>{c.groupName}</td>
-                    <td>{c.companyName}</td>
-                    <td>{c.gstnNo}</td>
-                    <td><button onClick={() => openEdit(c)}>Edit</button></td>
-                    <td><button onClick={() => handleDelete(c.chainId)}>Delete</button></td>
+                    <td style={ui.td}>{i + 1}</td>
+                    <td style={ui.td}>{c.groupName}</td>
+                    <td style={ui.td}>{c.companyName}</td>
+                    <td style={ui.td}>{c.gstnNo}</td>
+
+                    <td style={ui.td}>
+                      <button style={ui.btnEdit} onClick={() => openEdit(c)}>Edit</button>
+                    </td>
+
+                    <td style={ui.td}>
+                      <button style={ui.btnDelete} onClick={() => handleDelete(c.chainId)}>Delete</button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -229,9 +228,12 @@ console.log("Sending:", payload);
         </div>
       )}
 
+      {/* FORM */}
       {(view === "add" || view === "edit") && (
         <div style={ui.formCard}>
-          <h3>{view === "add" ? "Add Company" : "Edit Company"}</h3>
+          <h3 style={ui.formTitle}>
+            {view === "add" ? "Add Company" : "Edit Company"}
+          </h3>
 
           {error && <p style={ui.error}>{error}</p>}
           {success && <p style={ui.success}>{success}</p>}
@@ -239,36 +241,39 @@ console.log("Sending:", payload);
           <form onSubmit={view === "add" ? handleAdd : handleEdit}>
 
             <input
-              placeholder="Company"
+              style={ui.input}
+              placeholder="Company Name"
               value={form.companyName}
               onChange={(e) => setForm({ ...form, companyName: e.target.value })}
             />
 
             <input
-              placeholder="GST"
+              style={ui.input}
+              placeholder="GST Number"
               value={form.gstnNo}
               onChange={(e) => setForm({ ...form, gstnNo: e.target.value })}
             />
-              <select
-  value={form.groupId || ""}
-  onChange={(e) =>
-    setForm({
-      ...form,
-      groupId: Number(e.target.value) // 🔥 FIX HERE
-    })
-  }
->
-  <option value="">Select Group</option>
-  {groups.map((g) => (
-    <option key={g.groupId} value={g.groupId}>
-      {g.groupName}
-    </option>
-  ))}
-</select>
 
-            <button>{loading ? "Saving..." : "Save"}</button>
+            <select
+              style={ui.input}
+              value={form.groupId || ""}
+              onChange={(e) =>
+                setForm({ ...form, groupId: e.target.value })
+              }
+            >
+              <option value="">Select Group</option>
+              {groups.map(g => (
+                <option key={g.groupId} value={g.groupId}>
+                  {g.groupName}
+                </option>
+              ))}
+            </select>
 
-            <button type="button" onClick={() => {
+            <button style={ui.saveBtn}>
+              {loading ? "Saving..." : "Save"}
+            </button>
+
+            <button type="button" style={ui.cancelBtn} onClick={() => {
               resetForm();
               setView("list");
             }}>
@@ -282,13 +287,134 @@ console.log("Sending:", payload);
   );
 }
 
+// ================= STYLES =================
 const ui = {
-  page: { padding: 20 },
-  header: { display: "flex", justifyContent: "space-between" },
-  card: { marginTop: 20, padding: 20, background: "#fff" },
-  table: { width: "100%" },
-  formCard: { marginTop: 20, padding: 20, background: "#fff" },
-  addBtn: { padding: 10, marginRight: 10 },
-  error: { color: "red" },
-  success: { color: "green" }
+  page: {
+    padding: "30px",
+    background: "#f5f7fb",
+    minHeight: "100vh",
+    fontFamily: "Segoe UI"
+  },
+
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: "20px"
+  },
+
+  title: {
+    fontSize: "24px",
+    fontWeight: "600"
+  },
+
+  controls: {
+    display: "flex",
+    gap: "10px"
+  },
+
+  addBtn: {
+    padding: "10px 16px",
+    background: "#4CAF50",
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer"
+  },
+
+  select: {
+    padding: "8px",
+    borderRadius: "6px",
+    border: "1px solid #ccc"
+  },
+
+  card: {
+    background: "#fff",
+    padding: "20px",
+    borderRadius: "10px",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.08)"
+  },
+
+  table: {
+    width: "100%",
+    borderCollapse: "collapse"
+  },
+
+  th: {
+    background: "#f0f2f5",
+    padding: "12px"
+  },
+
+  td: {
+    padding: "12px",
+    borderBottom: "1px solid #eee"
+  },
+
+  btnEdit: {
+    background: "#2196F3",
+    color: "#fff",
+    border: "none",
+    padding: "6px 10px",
+    borderRadius: "5px",
+    cursor: "pointer"
+  },
+
+  btnDelete: {
+    background: "#f44336",
+    color: "#fff",
+    border: "none",
+    padding: "6px 10px",
+    borderRadius: "5px",
+    cursor: "pointer"
+  },
+
+  formCard: {
+    background: "#fff",
+    padding: "25px",
+    borderRadius: "10px",
+    maxWidth: "500px",
+    margin: "auto",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.08)"
+  },
+
+  formTitle: {
+    marginBottom: "15px",
+    fontSize: "20px"
+  },
+
+  input: {
+    width: "100%",
+    padding: "10px",
+    marginBottom: "12px",
+    borderRadius: "6px",
+    border: "1px solid #ccc"
+  },
+
+  saveBtn: {
+    width: "100%",
+    padding: "10px",
+    background: "#4CAF50",
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px",
+    marginBottom: "10px"
+  },
+
+  cancelBtn: {
+    width: "100%",
+    padding: "10px",
+    background: "#777",
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px"
+  },
+
+  error: {
+    color: "red",
+    marginBottom: "10px"
+  },
+
+  success: {
+    color: "green",
+    marginBottom: "10px"
+  }
 };
