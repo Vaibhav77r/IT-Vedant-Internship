@@ -25,6 +25,7 @@ D:\ims-project\backend\src\main\java\com\codeb\ims\controller\GroupController.ja
 D:\ims-project\backend\src\main\java\com\codeb\ims\controller\AuthController.java
 D:\ims-project\backend\src\main\java\com\codeb\ims\repository\ZoneRepository.java
 D:\ims-project\backend\src\main\java\com\codeb\ims\repository\GroupRepository.java
+D:\ims-project\backend\src\main\java\com\codeb\ims\security\SecurityConfig.java
 D:\ims-project\backend\src\main\java\com\codeb\ims\dto\AuthResponse.java
 D:\ims-project\backend\src\main\java\com\codeb\ims\repository\ChainRepository.java
 D:\ims-project\backend\src\main\java\com\codeb\ims\dto\GroupRequest.java
