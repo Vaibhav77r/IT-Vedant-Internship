@@ -21,6 +21,7 @@ export default function ManageEstimates() {
 
   const [estimates, setEstimates] = useState([]);
   const [invoices, setInvoices] = useState([]);
+  const [chains, setChains] = useState([]); // 🔥 NEW
 
   const [form, setForm] = useState(emptyForm);
   const [view, setView] = useState("list");
@@ -33,33 +34,34 @@ export default function ManageEstimates() {
     fetchData();
   }, []);
 
-  // ================= FIXED FETCH =================
+  // ================= FETCH =================
   const fetchData = async () => {
-    // ESTIMATES
     try {
       const res = await API.get("/api/estimates");
       setEstimates(res.data || []);
-    } catch (err) {
-      console.log("Estimates error:", err);
+    } catch {
       setError("Failed to load estimates");
     }
 
-    // INVOICES (SAFE)
     try {
       const res = await API.get("/api/invoices");
       setInvoices(res.data || []);
+    } catch {
+      setInvoices([]);
+    }
+
+    // 🔥 FETCH CHAINS (IMPORTANT)
+    try {
+      const res = await API.get("/api/chains");
+      setChains(res.data || []);
     } catch (err) {
-      console.log("Invoices error:", err);
-      setInvoices([]); // 🔥 prevents UI crash
+      console.log("Chains error", err);
     }
   };
 
   // ================= CHECK =================
-  const isInvoiceCreated = (estimateId) => {
-    return (invoices || []).some(
-      (inv) => inv.estimatedId === estimateId
-    );
-  };
+  const isInvoiceCreated = (id) =>
+    invoices.some((i) => i.estimatedId === id);
 
   // ================= TOTAL =================
   const total =
@@ -68,59 +70,36 @@ export default function ManageEstimates() {
       : "0.00";
 
   // ================= HANDLE =================
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
   // ================= SUBMIT =================
   const handleSubmit = async () => {
+    if (!form.chainId) {
+      setError("Please select company");
+      return;
+    }
+
     try {
       if (editId) {
         await API.put(`/api/estimates/${editId}`, form);
-        setSuccess("Updated successfully");
       } else {
         await API.post("/api/estimates", form);
-        setSuccess("Created successfully");
       }
 
+      setSuccess("Saved successfully");
       setForm(emptyForm);
-      setEditId(null);
       setView("list");
       fetchData();
-    } catch {
+    } catch (err) {
+      console.log(err);
       setError("Save failed");
     }
   };
 
-  // ================= EDIT =================
-  const handleEdit = (e) => {
-    setEditId(e.estimatedId);
-    setForm({
-      chainId: e.chainId || "",
-      groupName: e.groupName || "",
-      brandName: e.brandName || "",
-      zoneName: e.zoneName || "",
-      service: e.service || "",
-      qty: e.qty || "",
-      costPerUnit: e.costPerUnit || "",
-      deliveryDate: e.deliveryDate || "",
-      deliveryDetails: e.deliveryDetails || "",
-    });
-    setView("form");
-  };
-
-  // ================= DELETE =================
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this estimate?")) return;
-    await API.delete(`/api/estimates/${id}`);
-    fetchData();
-  };
-
   // ================= GENERATE =================
   const handleGenerate = (estimate) => {
-    navigate("/create-invoice", {
-      state: { estimate },
-    });
+    navigate("/create-invoice", { state: { estimate } });
   };
 
   const handleLogout = () => {
@@ -132,16 +111,14 @@ export default function ManageEstimates() {
     <div style={ui.container}>
       {/* SIDEBAR */}
       <aside style={ui.sidebar}>
-        <h2 style={ui.logo}>IMS</h2>
+        <h2>IMS</h2>
         <p onClick={() => navigate("/dashboard")}>Dashboard</p>
         <p style={ui.active}>Estimates</p>
         <p onClick={() => navigate("/invoices")}>Invoices</p>
         <p onClick={handleLogout}>Logout</p>
       </aside>
 
-      {/* MAIN */}
       <main style={ui.main}>
-        {/* HEADER */}
         <div style={ui.header}>
           <h2>Manage Estimates</h2>
           <button style={ui.primaryBtn} onClick={() => setView("form")}>
@@ -149,18 +126,59 @@ export default function ManageEstimates() {
           </button>
         </div>
 
-        {/* WARNING */}
-        {invoices.length === 0 && (
-          <p style={{ color: "orange", marginBottom: 10 }}>
-            Invoice service unavailable
-          </p>
+        {/* ================= FORM ================= */}
+        {view === "form" && (
+          <div style={ui.card}>
+            <h3>Create Estimate</h3>
+
+            {error && <p style={ui.error}>{error}</p>}
+            {success && <p style={ui.success}>{success}</p>}
+
+            <div style={ui.grid}>
+              {/* 🔥 COMPANY DROPDOWN */}
+              <select
+                name="chainId"
+                value={form.chainId}
+                onChange={handleChange}
+                style={ui.input}
+              >
+                <option value="">Select Company</option>
+                {chains.map((c) => (
+                  <option key={c.chainId} value={c.chainId}>
+                    {c.companyName}
+                  </option>
+                ))}
+              </select>
+
+              <input name="groupName" placeholder="Group" value={form.groupName} onChange={handleChange} style={ui.input} />
+              <input name="brandName" placeholder="Brand" value={form.brandName} onChange={handleChange} style={ui.input} />
+              <input name="zoneName" placeholder="Zone" value={form.zoneName} onChange={handleChange} style={ui.input} />
+              <input name="service" placeholder="Service" value={form.service} onChange={handleChange} style={ui.input} />
+              <input name="qty" placeholder="Qty" value={form.qty} onChange={handleChange} style={ui.input} />
+              <input name="costPerUnit" placeholder="Cost" value={form.costPerUnit} onChange={handleChange} style={ui.input} />
+              <input type="date" name="deliveryDate" value={form.deliveryDate} onChange={handleChange} style={ui.input} />
+              <input name="deliveryDetails" placeholder="Delivery" value={form.deliveryDetails} onChange={handleChange} style={ui.input} />
+            </div>
+
+            <p style={ui.total}>Total: ₹{total}</p>
+
+            <button
+              style={ui.primaryBtn}
+              onClick={handleSubmit}
+              disabled={!form.chainId}
+            >
+              Save
+            </button>
+
+            <button style={ui.cancelBtn} onClick={() => setView("list")}>
+              Cancel
+            </button>
+          </div>
         )}
 
         {/* ================= LIST ================= */}
         {view === "list" && (
           <div style={ui.card}>
-            {error && <p style={ui.error}>{error}</p>}
-
             <table style={ui.table}>
               <thead>
                 <tr>
@@ -182,63 +200,18 @@ export default function ManageEstimates() {
                     <td style={ui.amount}>₹{e.totalCost}</td>
 
                     <td>
-                      <button style={ui.editBtn} onClick={() => handleEdit(e)}>
-                        Edit
-                      </button>
-                      <button
-                        style={ui.deleteBtn}
-                        onClick={() => handleDelete(e.estimatedId)}
-                      >
-                        Delete
+                      <button onClick={() => handleGenerate(e)}>
+                        Generate
                       </button>
                     </td>
 
                     <td>
-                      {isInvoiceCreated(e.estimatedId) ? (
-                        <span style={ui.done}>✔ Generated</span>
-                      ) : (
-                        <button
-                          style={ui.invoiceBtn}
-                          onClick={() => handleGenerate(e)}
-                        >
-                          Generate
-                        </button>
-                      )}
+                      {isInvoiceCreated(e.estimatedId) ? "✔ Done" : "Pending"}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
-
-        {/* ================= FORM ================= */}
-        {view === "form" && (
-          <div style={ui.formCard}>
-            <h3>{editId ? "Edit Estimate" : "Create Estimate"}</h3>
-
-            {error && <p style={ui.error}>{error}</p>}
-            {success && <p style={ui.success}>{success}</p>}
-
-            <div style={ui.grid}>
-              <input name="groupName" placeholder="Group" value={form.groupName} onChange={handleChange} style={ui.input} />
-              <input name="brandName" placeholder="Brand" value={form.brandName} onChange={handleChange} style={ui.input} />
-              <input name="zoneName" placeholder="Zone" value={form.zoneName} onChange={handleChange} style={ui.input} />
-              <input name="service" placeholder="Service" value={form.service} onChange={handleChange} style={ui.input} />
-              <input name="qty" placeholder="Qty" value={form.qty} onChange={handleChange} style={ui.input} />
-              <input name="costPerUnit" placeholder="Cost" value={form.costPerUnit} onChange={handleChange} style={ui.input} />
-              <input type="date" name="deliveryDate" value={form.deliveryDate} onChange={handleChange} style={ui.input} />
-              <input name="deliveryDetails" placeholder="Delivery" value={form.deliveryDetails} onChange={handleChange} style={ui.input} />
-            </div>
-
-            <p style={ui.total}>Total: ₹{total}</p>
-
-            <button style={ui.primaryBtn} onClick={handleSubmit}>
-              Save
-            </button>
-            <button style={ui.cancelBtn} onClick={() => setView("list")}>
-              Cancel
-            </button>
           </div>
         )}
       </main>
@@ -249,59 +222,17 @@ export default function ManageEstimates() {
 // ================= UI =================
 const ui = {
   container: { display: "flex", background: "#f4f6f9", minHeight: "100vh" },
-
   sidebar: { width: 220, background: "#000", color: "#fff", padding: 20 },
-
-  logo: { fontSize: 22, fontWeight: "bold" },
-  active: { color: "#22c55e" },
-
   main: { flex: 1, padding: 30 },
-
   header: { display: "flex", justifyContent: "space-between" },
-
-  card: {
-    background: "#fff",
-    padding: 20,
-    borderRadius: 10,
-    boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
-  },
-
-  table: { width: "100%" },
-
-  formCard: { background: "#fff", padding: 20, borderRadius: 10 },
-
+  card: { background: "#fff", padding: 20, borderRadius: 10 },
   grid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
-
   input: { padding: 10, border: "1px solid #ddd", borderRadius: 6 },
-
-  primaryBtn: {
-    background: "#22c55e",
-    color: "#fff",
-    padding: 10,
-    border: "none",
-    borderRadius: 6,
-  },
-
-  cancelBtn: { marginLeft: 10, padding: 10 },
-
-  editBtn: { marginRight: 5 },
-
-  deleteBtn: { color: "red" },
-
-  invoiceBtn: {
-    background: "#4f46e5",
-    color: "#fff",
-    padding: "6px 12px",
-    border: "none",
-    borderRadius: 6,
-  },
-
-  done: { color: "green", fontWeight: "bold" },
-
+  primaryBtn: { background: "#22c55e", color: "#fff", padding: 10 },
+  cancelBtn: { marginLeft: 10 },
   amount: { color: "green", fontWeight: "bold" },
-
   total: { marginTop: 10, fontWeight: "bold" },
-
   error: { color: "red" },
   success: { color: "green" },
+  active: { color: "#22c55e" },
 };
