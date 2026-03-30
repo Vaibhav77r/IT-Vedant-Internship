@@ -79,13 +79,13 @@ export default function ManageChains() {
     setLoading(true);
 
     try {
-      const payload = {
-        companyName: form.companyName.trim(),
-        gstnNo: form.gstnNo.trim(),
-        groupId: Number(form.groupId) // 🔥 FIX
-      };
+     const payload = {
+  companyName: form.companyName.trim(),
+  gstnNo: form.gstnNo.trim(),
+  groupId: Number(form.groupId)
+};
 
-      console.log("Sending:", payload); // DEBUG
+console.log("Sending:", payload);
 
       await API.post("/api/chains", payload);
 
@@ -249,20 +249,22 @@ export default function ManageChains() {
               value={form.gstnNo}
               onChange={(e) => setForm({ ...form, gstnNo: e.target.value })}
             />
-
-            <select
-              value={form.groupId || ""}
-              onChange={(e) =>
-                setForm({ ...form, groupId: e.target.value })
-              }
-            >
-              <option value="">Select Group</option>
-              {groups.map(g => (
-                <option key={g.groupId} value={g.groupId}>
-                  {g.groupName}
-                </option>
-              ))}
-            </select>
+              <select
+  value={form.groupId || ""}
+  onChange={(e) =>
+    setForm({
+      ...form,
+      groupId: Number(e.target.value) // 🔥 FIX HERE
+    })
+  }
+>
+  <option value="">Select Group</option>
+  {groups.map((g) => (
+    <option key={g.groupId} value={g.groupId}>
+      {g.groupName}
+    </option>
+  ))}
+</select>
 
             <button>{loading ? "Saving..." : "Save"}</button>
 
