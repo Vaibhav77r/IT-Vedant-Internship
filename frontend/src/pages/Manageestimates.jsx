@@ -33,23 +33,28 @@ export default function ManageEstimates() {
     fetchData();
   }, []);
 
-  // ================= FETCH =================
+  // ================= FIXED FETCH =================
   const fetchData = async () => {
+    // ESTIMATES
     try {
-      const [e, inv] = await Promise.all([
-        API.get("/api/estimates"),
-        API.get("/api/invoices"), // ✅ FIXED
-      ]);
-
-      setEstimates(e.data || []);
-      setInvoices(inv.data || []);
+      const res = await API.get("/api/estimates");
+      setEstimates(res.data || []);
     } catch (err) {
-      console.log(err);
-      setError("Failed to load data");
+      console.log("Estimates error:", err);
+      setError("Failed to load estimates");
+    }
+
+    // INVOICES (SAFE)
+    try {
+      const res = await API.get("/api/invoices");
+      setInvoices(res.data || []);
+    } catch (err) {
+      console.log("Invoices error:", err);
+      setInvoices([]); // 🔥 prevents UI crash
     }
   };
 
-  // ================= CHECK INVOICE =================
+  // ================= CHECK =================
   const isInvoiceCreated = (estimateId) => {
     return (invoices || []).some(
       (inv) => inv.estimatedId === estimateId
@@ -62,7 +67,7 @@ export default function ManageEstimates() {
       ? (Number(form.qty) * Number(form.costPerUnit)).toFixed(2)
       : "0.00";
 
-  // ================= HANDLE CHANGE =================
+  // ================= HANDLE =================
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -111,7 +116,7 @@ export default function ManageEstimates() {
     fetchData();
   };
 
-  // ================= GENERATE INVOICE =================
+  // ================= GENERATE =================
   const handleGenerate = (estimate) => {
     navigate("/create-invoice", {
       state: { estimate },
@@ -144,6 +149,13 @@ export default function ManageEstimates() {
           </button>
         </div>
 
+        {/* WARNING */}
+        {invoices.length === 0 && (
+          <p style={{ color: "orange", marginBottom: 10 }}>
+            Invoice service unavailable
+          </p>
+        )}
+
         {/* ================= LIST ================= */}
         {view === "list" && (
           <div style={ui.card}>
@@ -167,19 +179,12 @@ export default function ManageEstimates() {
                     <td>{i + 1}</td>
                     <td>{e.brandName}</td>
                     <td>{e.zoneName}</td>
-                    <td style={{ color: "green", fontWeight: "bold" }}>
-                      ₹{e.totalCost}
-                    </td>
+                    <td style={ui.amount}>₹{e.totalCost}</td>
 
-                    {/* ACTIONS */}
                     <td>
-                      <button
-                        style={ui.editBtn}
-                        onClick={() => handleEdit(e)}
-                      >
+                      <button style={ui.editBtn} onClick={() => handleEdit(e)}>
                         Edit
                       </button>
-
                       <button
                         style={ui.deleteBtn}
                         onClick={() => handleDelete(e.estimatedId)}
@@ -188,7 +193,6 @@ export default function ManageEstimates() {
                       </button>
                     </td>
 
-                    {/* INVOICE */}
                     <td>
                       {isInvoiceCreated(e.estimatedId) ? (
                         <span style={ui.done}>✔ Generated</span>
@@ -246,12 +250,7 @@ export default function ManageEstimates() {
 const ui = {
   container: { display: "flex", background: "#f4f6f9", minHeight: "100vh" },
 
-  sidebar: {
-    width: 220,
-    background: "#000",
-    color: "#fff",
-    padding: 20,
-  },
+  sidebar: { width: 220, background: "#000", color: "#fff", padding: 20 },
 
   logo: { fontSize: 22, fontWeight: "bold" },
   active: { color: "#22c55e" },
@@ -267,25 +266,13 @@ const ui = {
     boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
   },
 
-  table: { width: "100%", borderCollapse: "collapse" },
+  table: { width: "100%" },
 
-  formCard: {
-    background: "#fff",
-    padding: 20,
-    borderRadius: 10,
-  },
+  formCard: { background: "#fff", padding: 20, borderRadius: 10 },
 
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 10,
-  },
+  grid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
 
-  input: {
-    padding: 10,
-    border: "1px solid #ddd",
-    borderRadius: 6,
-  },
+  input: { padding: 10, border: "1px solid #ddd", borderRadius: 6 },
 
   primaryBtn: {
     background: "#22c55e",
@@ -293,13 +280,9 @@ const ui = {
     padding: 10,
     border: "none",
     borderRadius: 6,
-    cursor: "pointer",
   },
 
-  cancelBtn: {
-    marginLeft: 10,
-    padding: 10,
-  },
+  cancelBtn: { marginLeft: 10, padding: 10 },
 
   editBtn: { marginRight: 5 },
 
@@ -311,10 +294,11 @@ const ui = {
     padding: "6px 12px",
     border: "none",
     borderRadius: 6,
-    cursor: "pointer",
   },
 
   done: { color: "green", fontWeight: "bold" },
+
+  amount: { color: "green", fontWeight: "bold" },
 
   total: { marginTop: 10, fontWeight: "bold" },
 
