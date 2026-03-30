@@ -1,15 +1,22 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import API from '../api/axios';
-import { useAuth } from '../context/AuthContext';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import API from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 
 const emptyForm = {
-  chainId: '', groupName: '', brandName: '', zoneName: '',
-  service: '', qty: '', costPerUnit: '', deliveryDate: '', deliveryDetails: ''
+  chainId: "",
+  groupName: "",
+  brandName: "",
+  zoneName: "",
+  service: "",
+  qty: "",
+  costPerUnit: "",
+  deliveryDate: "",
+  deliveryDetails: "",
 };
 
 export default function ManageEstimates() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   const [estimates, setEstimates] = useState([]);
@@ -17,320 +24,343 @@ export default function ManageEstimates() {
   const [groups, setGroups] = useState([]);
   const [brands, setBrands] = useState([]);
   const [zones, setZones] = useState([]);
-  const [total, setTotal] = useState(0);
 
-  const [view, setView] = useState('list');
-  const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [view, setView] = useState("list");
+  const [editId, setEditId] = useState(null);
 
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => {
+    fetchAll();
+  }, []);
 
-  // 🔥 FETCH ALL DATA
   const fetchAll = async () => {
     try {
-      setLoading(true);
-
-      const [estRes, chainRes, groupRes, brandRes, zoneRes] = await Promise.all([
-        API.get('/api/estimates'),
-        API.get('/api/chains'),
-        API.get('/api/groups'),
-        API.get('/api/brands'),
-        API.get('/api/zones'),
+      const [e, c, g, b, z] = await Promise.all([
+        API.get("/api/estimates"),
+        API.get("/api/chains"),
+        API.get("/api/groups"),
+        API.get("/api/brands"),
+        API.get("/api/zones"),
       ]);
 
-      setEstimates(estRes.data || []);
-      setTotal(estRes.data?.length || 0);
-      setChains(chainRes.data || []);
-      setGroups(groupRes.data || []);
-      setBrands(brandRes.data || []);
-      setZones(zoneRes.data || []);
-
+      setEstimates(e.data || []);
+      setChains(c.data || []);
+      setGroups(g.data || []);
+      setBrands(b.data || []);
+      setZones(z.data || []);
     } catch {
-      setError('Failed to load data');
-    } finally {
-      setLoading(false);
+      setError("Failed to load data");
     }
   };
 
-  // 🔥 TOTAL CALC
-  const totalCost = form.qty && form.costPerUnit
-    ? (Number(form.qty) * Number(form.costPerUnit)).toFixed(2)
-    : '0.00';
-
-  // 🔥 FILTER LOGIC
+  // ================= FILTER =================
   const filteredBrands = form.chainId
-    ? brands.filter(b => String(b.chainId) === String(form.chainId))
-    : brands;
+    ? brands.filter((b) => String(b.chainId) === String(form.chainId))
+    : [];
 
   const filteredZones = form.brandName
-    ? zones.filter(z => z.brandName === form.brandName)
-    : zones;
+    ? zones.filter((z) => z.brandName === form.brandName)
+    : [];
 
-  // 🔥 VALIDATION
-  const validate = () => {
-    if (!form.chainId) return 'Select company';
-    if (!form.groupName) return 'Select group';
-    if (!form.brandName) return 'Select brand';
-    if (!form.zoneName) return 'Select zone';
-    if (!form.service.trim()) return 'Service required';
-    if (!form.qty || form.qty <= 0) return 'Invalid quantity';
-    if (!form.costPerUnit || form.costPerUnit <= 0) return 'Invalid cost';
-    if (!form.deliveryDate) return 'Select date';
-    return null;
-  };
+  // ================= TOTAL =================
+  const total =
+    form.qty && form.costPerUnit
+      ? (Number(form.qty) * Number(form.costPerUnit)).toFixed(2)
+      : "0.00";
 
-  // 🔥 SUBMIT
+  // ================= SUBMIT =================
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
-    const err = validate();
-    if (err) return setError(err);
+    if (!form.chainId || !form.brandName || !form.zoneName) {
+      return setError("Please fill all required fields");
+    }
+
+    const payload = {
+      ...form,
+      chainId: Number(form.chainId),
+      qty: Number(form.qty),
+      costPerUnit: Number(form.costPerUnit),
+    };
 
     try {
-      setLoading(true);
-
-      const payload = {
-        chainId: Number(form.chainId),
-        groupName: form.groupName,
-        brandName: form.brandName,
-        zoneName: form.zoneName,
-        service: form.service,
-        qty: Number(form.qty),
-        costPerUnit: Number(form.costPerUnit),
-        deliveryDate: form.deliveryDate,
-        deliveryDetails: form.deliveryDetails,
-      };
-
       if (editId) {
         await API.put(`/api/estimates/${editId}`, payload);
-        setSuccess('Updated successfully');
+        setSuccess("Updated successfully");
       } else {
-        await API.post('/api/estimates', payload);
-        setSuccess('Created successfully');
+        await API.post("/api/estimates", payload);
+        setSuccess("Created successfully");
       }
 
       setForm(emptyForm);
       setEditId(null);
-      await fetchAll();
-      setTimeout(() => setView('list'), 1000);
+      fetchAll();
 
-    } catch (err) {
-      setError(err.response?.data?.error || 'Save failed');
-    } finally {
-      setLoading(false);
+      // Prevent crash by delaying view change
+      setTimeout(() => {
+        setView("list");
+      }, 300);
+    } catch {
+      setError("Save failed");
     }
   };
 
+  // ================= EDIT (FIXED) =================
   const handleEdit = (e) => {
     setEditId(e.estimatedId);
-    setForm(e);
-    setView('form');
+
+    setForm({
+      chainId: e.chainId || "",
+      groupName: e.groupName || "",
+      brandName: e.brandName || "",
+      zoneName: e.zoneName || "",
+      service: e.service || "",
+      qty: e.qty || "",
+      costPerUnit: e.costPerUnit || "",
+      deliveryDate: e.deliveryDate || "",
+      deliveryDetails: e.deliveryDetails || "",
+    });
+
+    setView("form");
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this estimate?')) return;
-
-    try {
-      await API.delete(`/api/estimates/${id}`);
-      await fetchAll();
-    } catch {
-      alert('Delete failed');
-    }
+    if (!window.confirm("Delete this estimate?")) return;
+    await API.delete(`/api/estimates/${id}`);
+    fetchAll();
   };
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
-    <div style={styles.container}>
-
+    <div style={ui.container}>
       {/* SIDEBAR */}
-      <aside style={styles.sidebar}>
-        <h2 style={styles.logo}>IMS</h2>
-
-        <div style={styles.nav}>
-          <div onClick={() => navigate('/dashboard')} style={styles.navItem}>Dashboard</div>
-          <div style={{ ...styles.navItem, ...styles.active }}>Estimates</div>
-        </div>
-
-        <div style={styles.footer}>
-          <p>Hi {user?.fullName}</p>
-          <button onClick={handleLogout} style={styles.logout}>Logout</button>
-        </div>
+      <aside style={ui.sidebar}>
+        <h2 style={ui.logo}>IMS</h2>
+        <p onClick={() => navigate("/dashboard")}>Dashboard</p>
+        <p style={ui.active}>Estimates</p>
+        <p onClick={handleLogout}>Logout</p>
       </aside>
 
       {/* MAIN */}
-      <main style={styles.main}>
-
-        {/* HEADER */}
-        <div style={styles.header}>
-          <h1 style={styles.title}>Manage Estimates</h1>
-          <button style={styles.primaryBtn} onClick={() => setView('form')}>
-            + Create Estimate
+      <main style={ui.main}>
+        <div style={ui.header}>
+          <h2>Manage Estimates</h2>
+          <button style={ui.primaryBtn} onClick={() => setView("form")}>
+            + Create
           </button>
         </div>
 
-        {/* STAT */}
-        <div style={styles.statCard}>
-          <p>Total Estimates</p>
-          <h2>{total}</h2>
-        </div>
-
-        {/* TABLE */}
-        {view === 'list' && (
-          <div style={styles.tableBox}>
-            <table style={styles.table}>
-              <thead style={styles.thead}>
+        {/* ================= LIST ================= */}
+        {view === "list" && (
+          <div style={ui.card}>
+            <table style={ui.table}>
+              <thead>
                 <tr>
                   <th>#</th>
-                  <th>Group</th>
                   <th>Brand</th>
                   <th>Zone</th>
-                  <th>Service</th>
-                  <th>Qty</th>
-                  <th>Price</th>
                   <th>Total</th>
-                  <th>Edit</th>
-                  <th>Delete</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
 
               <tbody>
-                {loading ? (
-                  <tr><td colSpan="10" style={styles.center}>Loading...</td></tr>
-                ) : estimates.length === 0 ? (
-                  <tr><td colSpan="10" style={styles.center}>No data found</td></tr>
-                ) : (
-                  estimates.map((e, i) => (
-                    <tr key={e.estimatedId} style={styles.row}>
-                      <td>{i + 1}</td>
-                      <td>{e.groupName}</td>
-                      <td>{e.brandName}</td>
-                      <td>{e.zoneName}</td>
-                      <td>{e.service}</td>
-                      <td>{e.qty}</td>
-                      <td>₹{e.costPerUnit}</td>
-                      <td style={{ color: '#059669', fontWeight: 'bold' }}>₹{e.totalCost}</td>
-                      <td><button style={styles.editBtn} onClick={() => handleEdit(e)}>Edit</button></td>
-                      <td><button style={styles.deleteBtn} onClick={() => handleDelete(e.estimatedId)}>Delete</button></td>
-                    </tr>
-                  ))
-                )}
+                {(estimates || []).map((e, i) => (
+                  <tr key={e.estimatedId}>
+                    <td>{i + 1}</td>
+                    <td>{e.brandName || "-"}</td>
+                    <td>{e.zoneName || "-"}</td>
+                    <td style={{ color: "green" }}>₹{e.totalCost || 0}</td>
+                    <td>
+                      <button style={ui.editBtn} onClick={() => handleEdit(e)}>
+                        Edit
+                      </button>
+                      <button
+                        style={ui.deleteBtn}
+                        onClick={() => handleDelete(e.estimatedId)}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         )}
 
-        {/* FORM */}
-        {view === 'form' && (
-          <div style={styles.formCard}>
-            <h2>{editId ? 'Update Estimate' : 'Create Estimate'}</h2>
+        {/* ================= FORM ================= */}
+        {view === "form" && (
+          <form onSubmit={handleSubmit} style={ui.card}>
+            <h3>Create Estimate</h3>
 
-            {error && <p style={styles.error}>{error}</p>}
-            {success && <p style={styles.success}>{success}</p>}
+            {error && <p style={ui.error}>{error}</p>}
+            {success && <p style={ui.success}>{success}</p>}
 
-            <div style={styles.formGrid}>
-
-              <select style={styles.input}
+            <div style={ui.grid}>
+              <select
+                style={ui.input}
                 value={form.chainId}
-                onChange={e => setForm({ ...form, chainId: e.target.value })}>
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    chainId: e.target.value,
+                    brandName: "",
+                    zoneName: "",
+                  })
+                }
+              >
                 <option value="">Select Company</option>
-                {chains.map(c => <option key={c.chainId} value={c.chainId}>{c.companyName}</option>)}
+                {chains.map((c) => (
+                  <option key={c.chainId} value={c.chainId}>
+                    {c.companyName}
+                  </option>
+                ))}
               </select>
 
-              <select style={styles.input}
+              <select
+                style={ui.input}
                 value={form.groupName}
-                onChange={e => setForm({ ...form, groupName: e.target.value })}>
+                onChange={(e) =>
+                  setForm({ ...form, groupName: e.target.value })
+                }
+              >
                 <option value="">Select Group</option>
-                {groups.map(g => <option key={g.groupId}>{g.groupName}</option>)}
+                {groups.map((g) => (
+                  <option key={g.groupId} value={g.groupName}>
+                    {g.groupName}
+                  </option>
+                ))}
               </select>
 
-              <select style={styles.input}
+              <select
+                style={ui.input}
                 value={form.brandName}
-                onChange={e => setForm({ ...form, brandName: e.target.value })}>
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    brandName: e.target.value,
+                    zoneName: "",
+                  })
+                }
+              >
                 <option value="">Select Brand</option>
-                {filteredBrands.map(b => <option key={b.brandId}>{b.brandName}</option>)}
+                {filteredBrands.map((b) => (
+                  <option key={b.brandId} value={b.brandName}>
+                    {b.brandName}
+                  </option>
+                ))}
               </select>
 
-              <select style={styles.input}
+              <select
+                style={ui.input}
                 value={form.zoneName}
-                onChange={e => setForm({ ...form, zoneName: e.target.value })}>
+                onChange={(e) =>
+                  setForm({ ...form, zoneName: e.target.value })
+                }
+              >
                 <option value="">Select Zone</option>
-                {filteredZones.map(z => <option key={z.zoneId}>{z.zoneName}</option>)}
+                {filteredZones.map((z) => (
+                  <option key={z.zoneId} value={z.zoneName}>
+                    {z.zoneName}
+                  </option>
+                ))}
               </select>
 
-              <input style={styles.input} placeholder="Service"
+              <input
+                style={ui.input}
+                placeholder="Service"
                 value={form.service}
-                onChange={e => setForm({ ...form, service: e.target.value })} />
+                onChange={(e) =>
+                  setForm({ ...form, service: e.target.value })
+                }
+              />
 
-              <input style={styles.input} type="number" placeholder="Quantity"
+              <input
+                style={ui.input}
+                type="number"
+                placeholder="Qty"
                 value={form.qty}
-                onChange={e => setForm({ ...form, qty: e.target.value })} />
+                onChange={(e) =>
+                  setForm({ ...form, qty: e.target.value })
+                }
+              />
 
-              <input style={styles.input} type="number" placeholder="Cost per unit"
+              <input
+                style={ui.input}
+                type="number"
+                placeholder="Cost"
                 value={form.costPerUnit}
-                onChange={e => setForm({ ...form, costPerUnit: e.target.value })} />
+                onChange={(e) =>
+                  setForm({ ...form, costPerUnit: e.target.value })
+                }
+              />
 
-              <input style={styles.input} type="date"
+              <input
+                style={ui.input}
+                type="date"
                 value={form.deliveryDate}
-                onChange={e => setForm({ ...form, deliveryDate: e.target.value })} />
-
+                onChange={(e) =>
+                  setForm({ ...form, deliveryDate: e.target.value })
+                }
+              />
             </div>
 
-            <div style={styles.totalBox}>
-              Total Amount: ₹{totalCost}
-            </div>
+            <div style={ui.total}>Total: ₹{total}</div>
 
-            <div style={styles.btnRow}>
-              <button style={styles.primaryBtn}>
-                {loading ? 'Saving...' : 'Save'}
-              </button>
-              <button style={styles.cancelBtn} onClick={() => setView('list')}>
-                Cancel
-              </button>
-            </div>
-          </div>
+            <button style={ui.primaryBtn}>Save</button>
+            <button
+              type="button"
+              style={ui.cancelBtn}
+              onClick={() => setView("list")}
+            >
+              Cancel
+            </button>
+          </form>
         )}
-
       </main>
     </div>
   );
 }
 
-const styles = {
-  container: { display: 'flex', minHeight: '100vh', background: '#f3f4f6', fontFamily: 'Segoe UI' },
-  sidebar: { width: 230, background: '#1e293b', color: '#fff', padding: 20 },
-  logo: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
-  navItem: { padding: 10, cursor: 'pointer' },
-  active: { color: '#4f46e5' },
-  footer: { marginTop: 40 },
-  logout: { marginTop: 10, background: '#ef4444', color: '#fff', border: 'none', padding: 6 },
-  main: { flex: 1, padding: 20 },
-  header: { display: 'flex', justifyContent: 'space-between', marginBottom: 20 },
-  title: { fontSize: 22 },
-  primaryBtn: { background: '#4f46e5', color: '#fff', padding: '8px 15px', border: 'none', borderRadius: 6 },
-  statCard: { background: '#4f46e5', color: '#fff', padding: 15, borderRadius: 10, width: 200, marginBottom: 20 },
-  tableBox: { background: '#fff', borderRadius: 10, overflow: 'hidden' },
-  table: { width: '100%', borderCollapse: 'collapse' },
-  thead: { background: '#f1f5f9' },
-  row: { borderTop: '1px solid #ddd' },
-  center: { textAlign: 'center', padding: 20 },
-  editBtn: { background: '#f59e0b', color: '#fff', border: 'none', padding: 5 },
-  deleteBtn: { background: '#ef4444', color: '#fff', border: 'none', padding: 5 },
-  formCard: { background: '#fff', padding: 20, borderRadius: 10, maxWidth: 700 },
-  formGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 },
-  input: { padding: 8, border: '1px solid #ddd', borderRadius: 6 },
-  totalBox: { marginTop: 10, fontWeight: 'bold', color: '#059669' },
-  btnRow: { marginTop: 10, display: 'flex', gap: 10 },
-  cancelBtn: { background: '#6b7280', color: '#fff', border: 'none', padding: 8 },
-  error: { color: 'red' },
-  success: { color: 'green' }
+// ================= UI =================
+const ui = {
+  container: { display: "flex", background: "#f4f6f9", minHeight: "100vh" },
+  sidebar: { width: 220, background: "#111", color: "#fff", padding: 20 },
+  logo: { fontSize: 22, fontWeight: "bold" },
+  active: { color: "#22c55e" },
+  main: { flex: 1, padding: 30 },
+  header: { display: "flex", justifyContent: "space-between" },
+  card: {
+    background: "#fff",
+    padding: 20,
+    borderRadius: 10,
+    boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
+  },
+  grid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
+  input: { padding: 10, borderRadius: 6, border: "1px solid #ccc" },
+  primaryBtn: {
+    background: "#22c55e",
+    color: "#fff",
+    padding: 10,
+    border: "none",
+    borderRadius: 6,
+    marginTop: 10,
+  },
+  cancelBtn: { background: "#6b7280", color: "#fff", padding: 10, marginLeft: 10 },
+  total: { marginTop: 10, color: "green", fontWeight: "bold" },
+  table: { width: "100%" },
+  editBtn: { marginRight: 5 },
+  deleteBtn: { color: "red" },
+  error: { color: "red" },
+  success: { color: "green" },
 };
