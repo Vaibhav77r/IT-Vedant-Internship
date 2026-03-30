@@ -60,9 +60,9 @@ export default function ManageChains() {
 
   // ================= VALIDATION =================
   const validateForm = () => {
-    if (!form.companyName) return "Company required";
-    if (!form.gstnNo) return "GST required";
-    if (form.gstnNo.length !== 15) return "GST must be 15 chars";
+    if (!form.companyName.trim()) return "Company required";
+    if (!form.gstnNo.trim()) return "GST required";
+    if (form.gstnNo.trim().length !== 15) return "GST must be 15 chars";
     if (!form.groupId) return "Select group";
     return null;
   };
@@ -79,13 +79,15 @@ export default function ManageChains() {
     setLoading(true);
 
     try {
-      console.log("Sending:", form); // DEBUG
-
-      await API.post("/api/chains", {
+      const payload = {
         companyName: form.companyName.trim(),
         gstnNo: form.gstnNo.trim(),
-        groupId: Number(form.groupId)
-      });
+        groupId: Number(form.groupId) // 🔥 FIX
+      };
+
+      console.log("Sending:", payload); // DEBUG
+
+      await API.post("/api/chains", payload);
 
       setSuccess("Added successfully!");
       resetForm();
@@ -94,6 +96,7 @@ export default function ManageChains() {
       setTimeout(() => setView("list"), 1000);
 
     } catch (err) {
+      console.log(err.response?.data);
       setError(err.response?.data?.message || "Add failed");
     } finally {
       setLoading(false);
@@ -112,11 +115,15 @@ export default function ManageChains() {
     setLoading(true);
 
     try {
-      await API.put(`/api/chains/${editChain.chainId}`, {
+      const payload = {
         companyName: form.companyName.trim(),
         gstnNo: form.gstnNo.trim(),
-        groupId: Number(form.groupId)
-      });
+        groupId: Number(form.groupId) // 🔥 FIX
+      };
+
+      console.log("Updating:", payload);
+
+      await API.put(`/api/chains/${editChain.chainId}`, payload);
 
       setSuccess("Updated successfully!");
       resetForm();
@@ -125,6 +132,7 @@ export default function ManageChains() {
       setTimeout(() => setView("list"), 1000);
 
     } catch (err) {
+      console.log(err.response?.data);
       setError(err.response?.data?.message || "Update failed");
     } finally {
       setLoading(false);
@@ -149,7 +157,7 @@ export default function ManageChains() {
     setForm({
       companyName: chain.companyName || "",
       gstnNo: chain.gstnNo || "",
-      groupId: chain.groupId || "" // ✅ FIX
+      groupId: chain.groupId ? String(chain.groupId) : "" // 🔥 FIX
     });
     setView("edit");
   };
@@ -163,7 +171,6 @@ export default function ManageChains() {
   return (
     <div style={ui.page}>
 
-      {/* HEADER */}
       <div style={ui.header}>
         <h2>Manage Chains</h2>
 
@@ -186,7 +193,6 @@ export default function ManageChains() {
         </div>
       </div>
 
-      {/* LIST */}
       {view === "list" && (
         <div style={ui.card}>
           {error && <p style={ui.error}>{error}</p>}
@@ -205,9 +211,7 @@ export default function ManageChains() {
 
             <tbody>
               {chains.length === 0 ? (
-                <tr>
-                  <td colSpan="6">No data</td>
-                </tr>
+                <tr><td colSpan="6">No data</td></tr>
               ) : (
                 chains.map((c, i) => (
                   <tr key={c.chainId}>
@@ -215,14 +219,8 @@ export default function ManageChains() {
                     <td>{c.groupName}</td>
                     <td>{c.companyName}</td>
                     <td>{c.gstnNo}</td>
-
-                    <td>
-                      <button onClick={() => openEdit(c)}>Edit</button>
-                    </td>
-
-                    <td>
-                      <button onClick={() => handleDelete(c.chainId)}>Delete</button>
-                    </td>
+                    <td><button onClick={() => openEdit(c)}>Edit</button></td>
+                    <td><button onClick={() => handleDelete(c.chainId)}>Delete</button></td>
                   </tr>
                 ))
               )}
@@ -231,7 +229,6 @@ export default function ManageChains() {
         </div>
       )}
 
-      {/* ADD / EDIT FORM */}
       {(view === "add" || view === "edit") && (
         <div style={ui.formCard}>
           <h3>{view === "add" ? "Add Company" : "Edit Company"}</h3>
@@ -255,7 +252,9 @@ export default function ManageChains() {
 
             <select
               value={form.groupId || ""}
-              onChange={(e) => setForm({ ...form, groupId: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, groupId: e.target.value })
+              }
             >
               <option value="">Select Group</option>
               {groups.map(g => (
@@ -273,15 +272,14 @@ export default function ManageChains() {
             }}>
               Cancel
             </button>
+
           </form>
         </div>
       )}
-
     </div>
   );
 }
 
-// ================= STYLES =================
 const ui = {
   page: { padding: 20 },
   header: { display: "flex", justifyContent: "space-between" },
