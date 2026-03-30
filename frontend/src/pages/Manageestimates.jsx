@@ -20,10 +20,7 @@ export default function ManageEstimates() {
   const navigate = useNavigate();
 
   const [estimates, setEstimates] = useState([]);
-  const [chains, setChains] = useState([]);
-  const [groups, setGroups] = useState([]);
-  const [brands, setBrands] = useState([]);
-  const [zones, setZones] = useState([]);
+  const [invoices, setInvoices] = useState([]);
 
   const [form, setForm] = useState(emptyForm);
   const [view, setView] = useState("list");
@@ -33,37 +30,31 @@ export default function ManageEstimates() {
   const [success, setSuccess] = useState("");
 
   useEffect(() => {
-    fetchAll();
+    fetchData();
   }, []);
 
-  const fetchAll = async () => {
+  // ================= FETCH =================
+  const fetchData = async () => {
     try {
-      const [e, c, g, b, z] = await Promise.all([
+      const [e, inv] = await Promise.all([
         API.get("/api/estimates"),
-        API.get("/api/chains"),
-        API.get("/api/groups"),
-        API.get("/api/brands"),
-        API.get("/api/zones"),
+        API.get("/api/invoices"), // ✅ FIXED
       ]);
 
       setEstimates(e.data || []);
-      setChains(c.data || []);
-      setGroups(g.data || []);
-      setBrands(b.data || []);
-      setZones(z.data || []);
-    } catch {
+      setInvoices(inv.data || []);
+    } catch (err) {
+      console.log(err);
       setError("Failed to load data");
     }
   };
 
-  // ================= FILTER =================
-  const filteredBrands = form.chainId
-    ? brands.filter((b) => String(b.chainId) === String(form.chainId))
-    : [];
-
-  const filteredZones = form.brandName
-    ? zones.filter((z) => z.brandName === form.brandName)
-    : [];
+  // ================= CHECK INVOICE =================
+  const isInvoiceCreated = (estimateId) => {
+    return (invoices || []).some(
+      (inv) => inv.estimatedId === estimateId
+    );
+  };
 
   // ================= TOTAL =================
   const total =
@@ -71,49 +62,34 @@ export default function ManageEstimates() {
       ? (Number(form.qty) * Number(form.costPerUnit)).toFixed(2)
       : "0.00";
 
+  // ================= HANDLE CHANGE =================
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
   // ================= SUBMIT =================
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-
-    if (!form.chainId || !form.brandName || !form.zoneName) {
-      return setError("Please fill all required fields");
-    }
-
-    const payload = {
-      ...form,
-      chainId: Number(form.chainId),
-      qty: Number(form.qty),
-      costPerUnit: Number(form.costPerUnit),
-    };
-
+  const handleSubmit = async () => {
     try {
       if (editId) {
-        await API.put(`/api/estimates/${editId}`, payload);
+        await API.put(`/api/estimates/${editId}`, form);
         setSuccess("Updated successfully");
       } else {
-        await API.post("/api/estimates", payload);
+        await API.post("/api/estimates", form);
         setSuccess("Created successfully");
       }
 
       setForm(emptyForm);
       setEditId(null);
-      fetchAll();
-
-      // Prevent crash by delaying view change
-      setTimeout(() => {
-        setView("list");
-      }, 300);
+      setView("list");
+      fetchData();
     } catch {
       setError("Save failed");
     }
   };
 
-  // ================= EDIT (FIXED) =================
+  // ================= EDIT =================
   const handleEdit = (e) => {
     setEditId(e.estimatedId);
-
     setForm({
       chainId: e.chainId || "",
       groupName: e.groupName || "",
@@ -125,14 +101,21 @@ export default function ManageEstimates() {
       deliveryDate: e.deliveryDate || "",
       deliveryDetails: e.deliveryDetails || "",
     });
-
     setView("form");
   };
 
+  // ================= DELETE =================
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this estimate?")) return;
     await API.delete(`/api/estimates/${id}`);
-    fetchAll();
+    fetchData();
+  };
+
+  // ================= GENERATE INVOICE =================
+  const handleGenerate = (estimate) => {
+    navigate("/create-invoice", {
+      state: { estimate },
+    });
   };
 
   const handleLogout = () => {
@@ -147,11 +130,13 @@ export default function ManageEstimates() {
         <h2 style={ui.logo}>IMS</h2>
         <p onClick={() => navigate("/dashboard")}>Dashboard</p>
         <p style={ui.active}>Estimates</p>
+        <p onClick={() => navigate("/invoices")}>Invoices</p>
         <p onClick={handleLogout}>Logout</p>
       </aside>
 
       {/* MAIN */}
       <main style={ui.main}>
+        {/* HEADER */}
         <div style={ui.header}>
           <h2>Manage Estimates</h2>
           <button style={ui.primaryBtn} onClick={() => setView("form")}>
@@ -162,6 +147,8 @@ export default function ManageEstimates() {
         {/* ================= LIST ================= */}
         {view === "list" && (
           <div style={ui.card}>
+            {error && <p style={ui.error}>{error}</p>}
+
             <table style={ui.table}>
               <thead>
                 <tr>
@@ -170,26 +157,49 @@ export default function ManageEstimates() {
                   <th>Zone</th>
                   <th>Total</th>
                   <th>Actions</th>
+                  <th>Invoice</th>
                 </tr>
               </thead>
 
               <tbody>
-                {(estimates || []).map((e, i) => (
+                {estimates.map((e, i) => (
                   <tr key={e.estimatedId}>
                     <td>{i + 1}</td>
-                    <td>{e.brandName || "-"}</td>
-                    <td>{e.zoneName || "-"}</td>
-                    <td style={{ color: "green" }}>₹{e.totalCost || 0}</td>
+                    <td>{e.brandName}</td>
+                    <td>{e.zoneName}</td>
+                    <td style={{ color: "green", fontWeight: "bold" }}>
+                      ₹{e.totalCost}
+                    </td>
+
+                    {/* ACTIONS */}
                     <td>
-                      <button style={ui.editBtn} onClick={() => handleEdit(e)}>
+                      <button
+                        style={ui.editBtn}
+                        onClick={() => handleEdit(e)}
+                      >
                         Edit
                       </button>
+
                       <button
                         style={ui.deleteBtn}
                         onClick={() => handleDelete(e.estimatedId)}
                       >
                         Delete
                       </button>
+                    </td>
+
+                    {/* INVOICE */}
+                    <td>
+                      {isInvoiceCreated(e.estimatedId) ? (
+                        <span style={ui.done}>✔ Generated</span>
+                      ) : (
+                        <button
+                          style={ui.invoiceBtn}
+                          onClick={() => handleGenerate(e)}
+                        >
+                          Generate
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -200,132 +210,32 @@ export default function ManageEstimates() {
 
         {/* ================= FORM ================= */}
         {view === "form" && (
-          <form onSubmit={handleSubmit} style={ui.card}>
-            <h3>Create Estimate</h3>
+          <div style={ui.formCard}>
+            <h3>{editId ? "Edit Estimate" : "Create Estimate"}</h3>
 
             {error && <p style={ui.error}>{error}</p>}
             {success && <p style={ui.success}>{success}</p>}
 
             <div style={ui.grid}>
-              <select
-                style={ui.input}
-                value={form.chainId}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    chainId: e.target.value,
-                    brandName: "",
-                    zoneName: "",
-                  })
-                }
-              >
-                <option value="">Select Company</option>
-                {chains.map((c) => (
-                  <option key={c.chainId} value={c.chainId}>
-                    {c.companyName}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                style={ui.input}
-                value={form.groupName}
-                onChange={(e) =>
-                  setForm({ ...form, groupName: e.target.value })
-                }
-              >
-                <option value="">Select Group</option>
-                {groups.map((g) => (
-                  <option key={g.groupId} value={g.groupName}>
-                    {g.groupName}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                style={ui.input}
-                value={form.brandName}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    brandName: e.target.value,
-                    zoneName: "",
-                  })
-                }
-              >
-                <option value="">Select Brand</option>
-                {filteredBrands.map((b) => (
-                  <option key={b.brandId} value={b.brandName}>
-                    {b.brandName}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                style={ui.input}
-                value={form.zoneName}
-                onChange={(e) =>
-                  setForm({ ...form, zoneName: e.target.value })
-                }
-              >
-                <option value="">Select Zone</option>
-                {filteredZones.map((z) => (
-                  <option key={z.zoneId} value={z.zoneName}>
-                    {z.zoneName}
-                  </option>
-                ))}
-              </select>
-
-              <input
-                style={ui.input}
-                placeholder="Service"
-                value={form.service}
-                onChange={(e) =>
-                  setForm({ ...form, service: e.target.value })
-                }
-              />
-
-              <input
-                style={ui.input}
-                type="number"
-                placeholder="Qty"
-                value={form.qty}
-                onChange={(e) =>
-                  setForm({ ...form, qty: e.target.value })
-                }
-              />
-
-              <input
-                style={ui.input}
-                type="number"
-                placeholder="Cost"
-                value={form.costPerUnit}
-                onChange={(e) =>
-                  setForm({ ...form, costPerUnit: e.target.value })
-                }
-              />
-
-              <input
-                style={ui.input}
-                type="date"
-                value={form.deliveryDate}
-                onChange={(e) =>
-                  setForm({ ...form, deliveryDate: e.target.value })
-                }
-              />
+              <input name="groupName" placeholder="Group" value={form.groupName} onChange={handleChange} style={ui.input} />
+              <input name="brandName" placeholder="Brand" value={form.brandName} onChange={handleChange} style={ui.input} />
+              <input name="zoneName" placeholder="Zone" value={form.zoneName} onChange={handleChange} style={ui.input} />
+              <input name="service" placeholder="Service" value={form.service} onChange={handleChange} style={ui.input} />
+              <input name="qty" placeholder="Qty" value={form.qty} onChange={handleChange} style={ui.input} />
+              <input name="costPerUnit" placeholder="Cost" value={form.costPerUnit} onChange={handleChange} style={ui.input} />
+              <input type="date" name="deliveryDate" value={form.deliveryDate} onChange={handleChange} style={ui.input} />
+              <input name="deliveryDetails" placeholder="Delivery" value={form.deliveryDetails} onChange={handleChange} style={ui.input} />
             </div>
 
-            <div style={ui.total}>Total: ₹{total}</div>
+            <p style={ui.total}>Total: ₹{total}</p>
 
-            <button style={ui.primaryBtn}>Save</button>
-            <button
-              type="button"
-              style={ui.cancelBtn}
-              onClick={() => setView("list")}
-            >
+            <button style={ui.primaryBtn} onClick={handleSubmit}>
+              Save
+            </button>
+            <button style={ui.cancelBtn} onClick={() => setView("list")}>
               Cancel
             </button>
-          </form>
+          </div>
         )}
       </main>
     </div>
@@ -335,32 +245,79 @@ export default function ManageEstimates() {
 // ================= UI =================
 const ui = {
   container: { display: "flex", background: "#f4f6f9", minHeight: "100vh" },
-  sidebar: { width: 220, background: "#111", color: "#fff", padding: 20 },
+
+  sidebar: {
+    width: 220,
+    background: "#000",
+    color: "#fff",
+    padding: 20,
+  },
+
   logo: { fontSize: 22, fontWeight: "bold" },
   active: { color: "#22c55e" },
+
   main: { flex: 1, padding: 30 },
+
   header: { display: "flex", justifyContent: "space-between" },
+
   card: {
     background: "#fff",
     padding: 20,
     borderRadius: 10,
     boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
   },
-  grid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
-  input: { padding: 10, borderRadius: 6, border: "1px solid #ccc" },
+
+  table: { width: "100%", borderCollapse: "collapse" },
+
+  formCard: {
+    background: "#fff",
+    padding: 20,
+    borderRadius: 10,
+  },
+
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 10,
+  },
+
+  input: {
+    padding: 10,
+    border: "1px solid #ddd",
+    borderRadius: 6,
+  },
+
   primaryBtn: {
     background: "#22c55e",
     color: "#fff",
     padding: 10,
     border: "none",
     borderRadius: 6,
-    marginTop: 10,
+    cursor: "pointer",
   },
-  cancelBtn: { background: "#6b7280", color: "#fff", padding: 10, marginLeft: 10 },
-  total: { marginTop: 10, color: "green", fontWeight: "bold" },
-  table: { width: "100%" },
+
+  cancelBtn: {
+    marginLeft: 10,
+    padding: 10,
+  },
+
   editBtn: { marginRight: 5 },
+
   deleteBtn: { color: "red" },
+
+  invoiceBtn: {
+    background: "#4f46e5",
+    color: "#fff",
+    padding: "6px 12px",
+    border: "none",
+    borderRadius: 6,
+    cursor: "pointer",
+  },
+
+  done: { color: "green", fontWeight: "bold" },
+
+  total: { marginTop: 10, fontWeight: "bold" },
+
   error: { color: "red" },
   success: { color: "green" },
 };
