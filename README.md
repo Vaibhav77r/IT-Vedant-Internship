@@ -24,8 +24,8 @@ A full-stack web application built with **Spring Boot** (backend) and **React.js
 | Module | Status |
 |--------|--------|
 | Login & Registration | ✅ Complete |
-| Client & Group Management | 🔄 In Progress |
-| Estimates & Invoicing | ⏳ Pending |
+| Client & Group Management | ✅ Complete 
+| Estimates & Invoicing |✅ Complete 
  
 ---
  
